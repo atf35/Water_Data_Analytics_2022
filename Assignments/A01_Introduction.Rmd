@@ -1,6 +1,6 @@
 ---
 title: "Assignment 1: Introduction"
-author: "Student Name"
+author: "Atalie Fischer"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -26,20 +26,33 @@ Target due date: 2022-01-18
 
 1. Post the link to your forked GitHub repository below. Your repo should include one or more commits and an edited README file.  
 
->  Link:
+>  Link: https://github.com/atf35/Water_Data_Analytics_2022.git
 
 ## Data Visualization Exercises
 
 2. Set up your work session. Check your working directory, load packages `tidyverse`,  `dataRetrieval`, and `zoo`. Set your ggplot theme as theme_classic (you may need to look up how to set your theme).
 
 ```{r, message = FALSE}
+getwd()
 
+library(tidyverse)
+library(dataRetrieval)
+library(zoo)
+
+theme_set(theme_classic())
 ```
 
 3. Upload discharge data for the Eno River at site 02096500 for the same dates as we studied in class (2012-01-01 through 2021-12-31). Obtain data for discharge. Rename the columns with informative titles, as we did in class. 
 
 ```{r}
+# Import data
+EnoDischarge <- readNWISdv(siteNumbers = "02096500",
+                     parameterCd = "00060", # discharge (ft3/s)
+                     startDate = "2012-01-01",
+                     endDate = "2021-12-31")
 
+# Renaming columns (one method of multiple)
+names(EnoDischarge)[4:5] <- c("Discharge_cfs", "Approval.Code")
 ```
 
 
@@ -54,19 +67,35 @@ Target due date: 2022-01-18
 * Add a legend. (hint: Google "add legend two geom layers ggplot")
 
 ```{r}  
+# Add columns to data frame for discharge in meters cubed per second and 30-day rolling mean
+EnoDischarge <- EnoDischarge %>%
+  mutate(Discharge_cms = Discharge_cfs/35.3147,
+         Discharge_rollingmean = rollmean(Discharge_cms, 30, fill=NA))
+#View(EnoDischarge)
+
+# Build a ggplot
+EnoPlot2 <- 
+  ggplot(EnoDischarge, aes(x = Date)) +
+         geom_line(aes(y = Discharge_cms, color = "Daily")) +
+         geom_line(aes(y = Discharge_rollingmean, color = "30-day")) +
+        scale_color_manual(values = c("Daily"="grey", "30-day"="blue")) +
+        scale_y_log10(name = expression("Discharge, cms"))
+      theme_classic() +
+    theme(axis.title.x = element_blank(), legend.title = element_blank(), legend.position = "top")
+EnoPlot2
 
 
 ```
 
 5. In what ways was the second plot a more effective visualization than the first? 
 
-> ANSWER: 
+> ANSWER: It is difficult to see any time trends on the first plot since only daily discharge is plotted. Separating the daily discharge and creating a 30-day rolling mean better illustrates the discharge fluctuations through time. The second plot also displays the discharge data on a logarithmic scale, which helps to better visualize the trend within the data. 
 
 6. What portions of the coding were challenging for you?
 
-> ANSWER: 
+> ANSWER: Formatting the aesthetics of the plot was difficult for me. Also creating a legends was difficult. Even with the help of the key, the legend displayed on my plot has a "colour" title that I am unsure of how to get rid of. 
 
 7. Interpret the graph you made. What are the things you notice about within- and across-year variability, as well as the differences between daily values and 30-day rolling mean?
 
-> ANSWER: 
+> ANSWER: There is much more fluctuation in daily values than 30-day rolling mean, which is expected since the mean averages out the extreme highs and lows. The Eno River displays great fluctuations within and across years, with variability possibly increasing towards the present time. Maximum discharges have increased through the years as well. 
 
