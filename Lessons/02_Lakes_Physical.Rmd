@@ -16,6 +16,9 @@ editor_options:
 ## Opening Discussion
 
 What are the physical properties of lakes?
+* Temperature
+* Depth
+* Light transmission
 
 ## Session Set Up
 ```{r, message = FALSE}
@@ -32,7 +35,7 @@ library(lubridate)
 library(rLakeAnalyzer)
 
 # Load data
-NTLdata <- read.csv("./Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv")
+NTLdata <- read.csv("./Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv") #data from north temperate lakes ecological research station
 
 # set ggplot theme
 theme_set(theme_classic())
@@ -50,28 +53,32 @@ Common steps/checks for data wrangling:
 
 ```{r}
 # Is the date column perceived as a date by R?
-class(NTLdata$sampledate)
-NTLdata$sampledate <- as.Date(NTLdata$sampledate, format = "%m/%d/%y")
+class(NTLdata$sampledate) #ask R what kind of data it sees in the column "sampledate"
+NTLdata$sampledate <- as.Date(NTLdata$sampledate, format = "%m/%d/%y") #tell R to read the class as a date and provide R with the format that the date exists in. y=2-digit year, Y=4-digit year. help(as.Date) 
 class(NTLdata$sampledate)
 # What does this column look like now?
+    #now looks like YYY-MM-DD (universal format)
 
 # Remove rows that contain NAs in temperature column
-dim(NTLdata)
-NTLdata <- NTLdata %>%
-  drop_na(temperature_C)
+dim(NTLdata) #check dimensions of dataset...output: # of rows, # of columns
+NTLdata <- NTLdata %>% #pipe "%>%" tells R to continue the function..."then"
+  drop_na(temperature_C) #delete rows that don't have any temperature data 
 dim(NTLdata)  
+        #to write in one line...
+              #NTLdata <- drop_na(NTLdata, temperature_C)
+      
 
 # How many observations are there for each lake?
-summary(NTLdata$lakename)
-summary(as.factor(NTLdata$lakename))
+summary(NTLdata$lakename) #R is treating the column as a character
+summary(as.factor(NTLdata$lakename)) #count of how many rows in the dataset that each lake name appears in the dataset. also tells us where we have the most temperature data (peter lake has the most temperature data) bc we removed all the rows that do not have temperature data
 
 # Let's choose the two lakes with the most data
 NTLdata_PeterPaul <- NTLdata %>%
-  filter(lakename %in% c("Paul Lake", "Peter Lake"))
+  filter(lakename %in% c("Paul Lake", "Peter Lake")) # %in% = "include", c()=list
 
 # What is another way to use the filter command to get to the same result?
 NTLdata_PeterPaul <- NTLdata %>%
-  filter(lakename == "Paul Lake" | lakename == "Peter Lake")
+  filter(lakename == "Paul Lake" | lakename == "Peter Lake") #boolean operators, | = "or"
 
 # Make two data frames, one for each lake
 Pauldata <- NTLdata %>%
@@ -81,14 +88,15 @@ Peterdata <- NTLdata %>%
 
 # How long did the monitoring last?
 min(Pauldata$sampledate)
-max(Pauldata$sampledate)
+max(Pauldata$sampledate) #over 30 years of data
 min(Peterdata$sampledate)
 max(Peterdata$sampledate)
 
 # Which depths are sampled in each lake?
-unique(Pauldata$depth)
+unique(Pauldata$depth) #depth in m
 unique(Peterdata$depth)
 # Why didn't we use the "summary" function here?
+summary(Peterdata$depth) #doesn't tell us that they sample at 0.5 increments 
 
 # QA the one data point at 20 m depth. 
 Pauldata <- Pauldata %>%
@@ -103,19 +111,29 @@ Let's make a plot of temperatures by depth. There are a lot of points, so adding
 Let's also try using the traditional limnological graph type, with depth on the y axis in reverse, to simulate a cross section of a lake. When and where do we usually observe high and low temperatures?
 ```{r}
 ggplot(Pauldata, aes(x = depth, y = temperature_C)) + 
-  geom_point(alpha = 0.5) +
+  geom_point(alpha = 0.5) + 
   labs(y = expression("Temperature "(degree*C)), x = "Depth (m)")
+          #aes: axes, color, shape...
+          #alpha = transparency
 
+#flip axes for traditional limnology representation
 ggplot(Pauldata, aes(x = temperature_C, y = depth, color = daynum)) +
   geom_point(alpha = 0.5) +
   scale_y_reverse() +
   scale_color_viridis_c() +
   labs(x = expression("Temperature "(degree*C)), y = "Depth (m)", color = "DOY")
-
+          # one sampling time in november when its really cold. 
+          # thermally mixed when the temperature is the same all the way down 
+          # stratified when there is a gradient in temperature within the water column (resistance to mixing, differing densities with temperature)
+                  #epilimnion = top
+                  #hypolimnion = bottom - water is most dense at 4C (winter)
+              # dimictic - mixing twice per year (spring and fall) 
 ```
 
 How do temperatures at the surface compare to temperatures at the mid-depths and at the bottom?
-<add notes here>
+* temperature decreases with depth
+* temperature is more variable at the upper portion of the water column
+* there was one dataset where the entire water column is cold
 
 
 ### Graphing seasonal water profiles
