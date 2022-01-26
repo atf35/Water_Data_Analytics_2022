@@ -128,6 +128,8 @@ ggplot(Pauldata, aes(x = temperature_C, y = depth, color = daynum)) +
                   #epilimnion = top
                   #hypolimnion = bottom - water is most dense at 4C (winter)
               # dimictic - mixing twice per year (spring and fall) 
+
+
 ```
 
 How do temperatures at the surface compare to temperatures at the mid-depths and at the bottom?
@@ -154,7 +156,15 @@ ggplot(subset(Pauldata, year4 == 1993),
   labs(x = expression("Temperature "(degree*C)), y = "Depth (m)", color = "DOY") 
 
 # Now, make a plot as above but with dissolved oxygen saturation instead of temperature.
+ggplot(subset(Pauldata, year4 == 1993), 
+       aes(x = dissolvedOxygen, y = depth, color = daynum)) +
+  geom_point(alpha = 0.5) +
+  scale_y_reverse() +
+  scale_color_viridis_c() +
+  labs(x = expression("DO (mg/L)"), y = "Depth (m)", color = "DOY") 
 
+#stratified conditions: DO concentrations are higher in the epilimnion (upper water column) due to wave motion (incorporating oxygen through wind towards atmospheric equilibrium), plants an algae (phytoplankton photosynthesizing during the day)
+#bulge in DO at slightly lower depths (right below the thermocline) becasue phytoplankton need light and nutrients to photosynthesize. respiration occurs in the hypolimnion (low water column) giving higher nutrient concentrations in the hyperlimnion. they like to hang out where theres light from above and nutrients from below. 
 
 ```
 
@@ -174,12 +184,12 @@ Pauldata_thermo <- Pauldata %>%
   # seasonal = FALSE calculates the thermocline as the maximum density gradient
   # seasonal = TRUE calculates the thermocline as the deepest density gradient
   summarise(thermocline = thermo.depth(wtr = temperature_C, depths = depth, seasonal = FALSE)) %>%
-  # remove all thermoclines within 1 m of the surface. these can represent transient stratification.
+  # remove all thermoclines within 1 m of the surface. these can represent transient stratification. warming in upper layer of epilimnion due to diurnal warming that goes away within a day or two. 
   filter(thermocline > 1)
 
 ggplot(Pauldata_thermo, aes(x = daynum, y = thermocline)) +
   geom_point() 
-  
+  # general pattern: thermocline deepening and narrowing through the year. day 0 is day of first stratification (e.g. switch from spring to summer)
 ```
 
 How does thermocline depth change over the course of the year? When do we observe the most variability in thermocline depth?
@@ -194,7 +204,7 @@ Increases in global temperature are predicted to cause several changes to lake t
 * Increases in surface minimum temperature
 * Increases in extent of stratification
 * Increases in length of stratification
-* Decreases in ice cover
+* Decreases in ice cover (switch from dimictic to monomictic)
 
 Several studies have addressed this topic, using long-term and spatially diverse datasets: 
 
@@ -211,6 +221,7 @@ Let's explore how these changes might manifest in Paul Lake.
 ggplot(Pauldata_thermo, aes(x = daynum, y = thermocline, color = year4)) +
   geom_point() +
   scale_color_viridis_c()
+# first day of stratificaiton earlier with thermocline deepening throughout the season: first sample may be deeper earlier in the season with potential narrowing in the band earlier. 
 # exercise: put the legend on top and relabel the aesthetics
 
 ggplot(subset(Pauldata, depth == 1),
@@ -218,6 +229,7 @@ ggplot(subset(Pauldata, depth == 1),
   geom_point(alpha = 0.5) +
   geom_line() +
   scale_color_viridis_d()
+#plotting surface temperatures. year plotted as factor (all listed individually)
 # exercise: relabel the aesthetics
 
 ```
