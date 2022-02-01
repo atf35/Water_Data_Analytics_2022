@@ -1,6 +1,6 @@
 ---
 title: "Assignment 2: Physical Properties of Lakes"
-author: "Student Name"
+author: "Atalie Fischer"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -31,8 +31,21 @@ Target due date: 2022-01-25
 5. Set your ggplot theme (can be theme_classic or something else)
 
 ```{r}
+getwd()
 
+library(tidyverse)
+library(lubridate)
+library(rLakeAnalyzer)
 
+PhysLakeData <- read.csv("./Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv")
+
+PhysLakeData$sampledate <- as.Date(PhysLakeData$sampledate, format = "%m/%d/%y")
+
+PhysLakeData <- PhysLakeData %>% 
+  mutate(Month = month(sampledate)) %>% 
+  drop_na(temperature_C)
+
+theme_set(theme_classic())
 ```
 
 ## Creating and analyzing lake temperature profiles
@@ -42,9 +55,15 @@ Target due date: 2022-01-25
 What seasonal trends do you observe, and do these manifest differently in each lake?
 
 ```{r}
-
-
+ggplot(subset(PhysLakeData, year4 == 1993), 
+             aes(y = depth, x = temperature_C, color = daynum)) +
+  geom_point() +
+  facet_wrap(~lakename) +
+  scale_y_reverse()
+  
 ```
+
+> All lakes except for Central Long Lake exhibit thermal mixing. 
 
 6. Create a new dataset that calculates thermocline depths for all lakes on all dates (hint: you will need group by lake, year, month, DOY, and sample date).
 7. Plot thermocline depth by day of year for your newly made dataset. Color each point by lake name, make the points 50% transparent, and choose a color palette other than the ggplot default. 
@@ -53,6 +72,23 @@ What seasonal trends do you observe, and do these manifest differently in each l
 Do all the lakes have a similar seasonal progression of thermocline deepening? Which lakes have the deepest thermoclines, and how does this relate to their maximum depth? 
 
 ```{r}
+PhysLakeData_thermo <- PhysLakeData %>%
+  group_by(lakename, year4, Month, daynum, sampledate) %>%
+  summarise(thermocline = thermo.depth(wtr = temperature_C, depths = depth, seasonal = FALSE)) %>%
+  filter(thermocline > 1)
+
+ggplot(PhysLakeData_thermo, aes(x = daynum, y = thermocline, color = lakename)) +
+  geom_point(alpha = 0.5) +
+  scale_color_brewer()
+  
+
+month <- as.factor(PhysLakeData_thermo$Month)
+
+ggplot(PhysLakeData_thermo, aes(x = lakename, y = thermocline, color = month)) +
+  geom_boxplot() +
+  scale_color_brewer() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
 ```
 
+> Some lakes have steeper thermocline deepening throughout the year. Peter Lake has the deepest thermocline. 
