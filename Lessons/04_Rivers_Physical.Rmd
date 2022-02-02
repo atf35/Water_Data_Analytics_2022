@@ -16,12 +16,17 @@ editor_options:
 ## Opening Discussion
 How is climate change impacting discharge in streams and rivers? What are the new and ongoing challenges faced by these impacts in watersheds?
 
+* Higher variability in flow (flashy)
+* Shifts in peak discharge, timing of snowmelt
+* Types of discharge change
+* Changes in evapotranspiration due to temperature increases 
+
 ## Session Set Up
 
 ```{r, message = FALSE}
 getwd()
 
-# install.packages("lfstat")
+# install.packages("lfstat") #low flow statistics
 
 library(tidyverse)
 library(dataRetrieval)
@@ -54,17 +59,19 @@ Let's import discharge data for the Eno River near Durham for all available date
 EnoDischarge <- readNWISdv(siteNumbers = "02085070",
                      parameterCd = "00060", # discharge (ft3/s)
                      startDate = "", 
-                     endDate = "2021-09-30")
+                     endDate = "2021-09-30") # "the water year" starts on the first day of October and ends on the last day of September. This captures the full snow season instead of splitting it in half with Jan and Dec. 
 
 names(EnoDischarge)[4:5] <- c("Discharge", "Approval.Code")
 
-attr(EnoDischarge, "variableInfo")
-attr(EnoDischarge, "siteInfo")
+attr(EnoDischarge, "variableInfo") # mean daily discharge
+attr(EnoDischarge, "siteInfo") # geographic context of the gage
   
 # Build a ggplot
 ggplot(EnoDischarge, aes(x = Date, y = Discharge)) +
   geom_line() +
   labs(x = "Year", y = "Discharge (cfs)")
+
+#event-based discharge peaks. some seasonablity but not as much as in snowpack affected rivers. 
 ```
 
 We can then compute recurrence intervals based on the first 30 years of data.
@@ -74,10 +81,13 @@ EnoDischarge <- EnoDischarge %>%
   mutate(Year = year(Date), 
          WaterYear = water_year(Date, origin = "usgs")) %>%
   filter(WaterYear != "1963")
+# different regions of the world have different water years. this is why you need to specify the origin. need to filter out 1963 in the water year because otherwise the 1963 water year will only be 30 days long. R always computes the water year as a factor. this is why it is in quotations.
 
 # Water Year is a factor. We want to re-classify as numeric.
 EnoDischarge$WaterYear <- as.numeric(as.character(EnoDischarge$WaterYear))
+# need to specify that a factor is a character first before you change it to numeric. if you try to change a factor just to a number, then it will rank the years (e.g. 1963 will be 1).
 
+# Calculate Recurrence Intervals for 30 years. group_by water year to analyze the whole water year at the same time (one estimate per water year). summarise the max discharge per water year. this is similar to a pivot table.
 EnoRecurrence <- 
   EnoDischarge %>%
   filter(WaterYear < 1994) %>%
@@ -98,7 +108,8 @@ Let's display and model the relationship between peak annual disharge and recurr
 ggplot(EnoRecurrence, aes(x = RecurrenceInterval, y = PeakDischarge)) +
   geom_point() +
   scale_x_log10() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm", color = "black", se = FALSE)
+#lm=linear model, se = standard error
 
 Eno.RImodel <- lm(data = EnoRecurrence, PeakDischarge ~ log10(RecurrenceInterval))
 summary(Eno.RImodel)
@@ -106,6 +117,7 @@ summary(Eno.RImodel)
 #What is the discharge for a 100-year flood in this system? a 500-year flood?
 Eno.RImodel$coefficients[1] + Eno.RImodel$coefficients[2]*log10(100)
 Eno.RImodel$coefficients[1] + Eno.RImodel$coefficients[2]*log10(500)
+# using summary statistics...intercept (coeff. 1) + slope (coeff. 2) * recurrence interval
 ```
 
 What if we were to build a recurrence interval model for the most recent 30 years? How would this compare to the early period recurrence interval?
@@ -124,14 +136,17 @@ ggplot(EnoRecurrence, aes(x = RecurrenceInterval, y = PeakDischarge)) +
   geom_point(data = EnoRecurrence.Late, color = "#02818a",
              aes(x = RecurrenceInterval, y = PeakDischarge)) +
   scale_x_log10()
+# less frequent events are higher. lowest discharges overlap. discharges at higher recurrence intervals have higher peak discharges.
 
 Eno.RImodel.Late <- lm(data = EnoRecurrence.Late, PeakDischarge ~ log10(RecurrenceInterval))
 summary(Eno.RImodel.Late)
 Eno.RImodel.Late$coefficients
 Eno.RImodel$coefficients
+#slope in later years has greatly increased!
 
 Eno.RImodel.Late$coefficients[1] + Eno.RImodel.Late$coefficients[2]*log10(100)
 Eno.RImodel.Late$coefficients[1] + Eno.RImodel.Late$coefficients[2]*log10(500)
+#100 and 500 year floods are much greater than before
 
 Eno.RImodel$coefficients[1] + Eno.RImodel$coefficients[2]*log10(100)
 Eno.RImodel$coefficients[1] + Eno.RImodel$coefficients[2]*log10(500)
@@ -162,7 +177,7 @@ attr(SaladoDischarge, "siteInfo")
 ggplot(SaladoDischarge, aes(x = Date, y = Discharge)) +
   geom_line() +
   labs(x = "Year", y = "Discharge (cfs)")
-
+# flashy, event based discharge (random high, fast peaks that are not seasonal). more small-medium sized events in recent years. possible data gaps. highs are higher. Urbanization and channelization of flow. 
 
 ```
 
@@ -180,6 +195,7 @@ attr(GreenDischarge, "siteInfo")
 ggplot(GreenDischarge, aes(x = Date, y = Discharge)) +
   geom_line() +
   labs(x = "Year", y = "Discharge (cfs)")
+# dam was built for flood control! you can see the drop in discharge. 
 
 ```
 

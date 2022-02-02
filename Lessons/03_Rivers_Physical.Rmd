@@ -167,6 +167,7 @@ EnoPlot <-
   theme(plot.title = element_text(margin = margin(b = -10), size = 12), 
         axis.text.x = element_blank(), axis.title.x = element_blank())
 EnoPlot
+#(North Carolina) flashiness from urban area, dominated by rain events, seasonal
 
 VerdePlot <- 
   ggplot(CombinedDischarge, aes(x = Date, y = Verde.Discharge)) +
@@ -175,6 +176,7 @@ VerdePlot <-
   theme(plot.title = element_text(margin = margin(b = -10), size = 12), 
         axis.text.x = element_blank(), axis.title.x = element_blank())
 VerdePlot
+#(Arizona)arid climate, dominated by rain events, big stream that is ephemeral
 
 BitterrootPlot <- 
   ggplot(CombinedDischarge, aes(x = Date, y = Bitterroot.Discharge)) +
@@ -183,6 +185,7 @@ BitterrootPlot <-
   theme(plot.title = element_text(margin = margin(b = -10), size = 12), 
         axis.text.x = element_blank(), axis.title.x = element_blank())
 BitterrootPlot
+#(West) strong annual patterns of snow melt, many tributaries, not wholy dominated by event based precipitation, high gradient (mountainous)
 
 SaukPlot <- 
   ggplot(CombinedDischarge, aes(x = Date, y = Sauk.Discharge)) +
@@ -191,6 +194,7 @@ SaukPlot <-
   theme(plot.title = element_text(margin = margin(b = -10), size = 12), 
         axis.text.x = element_blank(), axis.title.x = element_blank())         
 SaukPlot
+#(Minnesota) seasonality in some years, but in later years there is a shift in seasonal pattern. Seasonality due to snow pack. Possibly less snow in 2016-18 period. Drains more low gradient system. 
 
 NehalemPlot <- 
   ggplot(CombinedDischarge, aes(x = Date, y = Nehalem.Discharge)) +
@@ -198,6 +202,7 @@ NehalemPlot <-
   labs(x = "", y = expression("Discharge (ft"^3*"/s)"), title = "Nehalem River") + 
   theme(plot.title = element_text(margin = margin(b = -10), size = 12))
 NehalemPlot
+#(Pacific Northwest) seasonal, small watershed, affected by climate patterns but tempered by the Pacific Ocean. Urban area? Landuse impacts of deforestation. Wet and dry seasons. Winter peak instead of spring peak. Not dominated by snowpack. 
 
 CombinedPlot <- 
   plot_grid(EnoPlot, VerdePlot, BitterrootPlot, SaukPlot, NehalemPlot, 
@@ -228,24 +233,31 @@ Let's take the Bitterroot River, which displays a clear seasonal cycle. Let's de
 ```{r}  
 BitterrootDischarge.Historical <- readNWISdv(siteNumbers = "12344000",
                      parameterCd = "00060", # discharge (ft3/s)
-                     startDate = "")
+                     startDate = "") #grab whole period of reference when no start date specified
 
-names(BitterrootDischarge.Historical)[4:5] <- c("Discharge", "Approval.Code")
+names(BitterrootDischarge.Historical)[4:5] <- c("Discharge", "Approval.Code") #rename columns to something meaningful
 
 BitterrootDischarge.Historical <- mutate(BitterrootDischarge.Historical, 
-                                         DOY = yday(Date))
+                                         DOY = yday(Date)) #add new column for day of year
 
+#create summary across all years
+#group_by(DOY) to get typical year
+#p95 and p5 to get highs and lows
+#na.rm = TURE to tell it to remove any NAs
 BitterrootDischarge.Pattern <- BitterrootDischarge.Historical %>%
   group_by(DOY) %>%
-  summarise(Median.Discharge = median(Discharge), 
+  summarise(Median.Discharge = median(Discharge, na.rm = TRUE), 
             p95.Discharge = quantile(Discharge, 0.95, na.rm = TRUE),
             p5.Discharge = quantile(Discharge, 0.05, na.rm = TRUE))
 
+#put median, p95, and p5 on graph. specify y-aes separately for each one. color assigned outside of aesthetics. 
 ggplot(BitterrootDischarge.Pattern, aes(x = DOY)) +
   geom_line(aes(y = Median.Discharge)) +
   geom_line(aes(y = p95.Discharge), color = "gray") +
   geom_line(aes(y = p5.Discharge), color = "gray") +  
   labs(x = "Day of Year", y = expression("Discharge (ft"^3*"/s)")) 
+
+#peak at same time --> snowmelt!!! magnitude shift from year to year instead of timing shift. 
 ```
 
 
