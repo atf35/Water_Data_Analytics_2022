@@ -60,10 +60,16 @@ ggplot(subset(PhysLakeData, year4 == 1993),
   geom_point() +
   facet_wrap(~lakename) +
   scale_y_reverse()
+
+ggplot(subset(PhysLakeData, year4 == 1993), 
+             aes(y = depth, x = dissolvedOxygen, color = daynum)) +
+  geom_point() +
+  facet_wrap(~lakename) +
+  scale_y_reverse()
   
 ```
 
-> All lakes except for Central Long Lake exhibit thermal mixing. 
+> A
 
 6. Create a new dataset that calculates thermocline depths for all lakes on all dates (hint: you will need group by lake, year, month, DOY, and sample date).
 7. Plot thermocline depth by day of year for your newly made dataset. Color each point by lake name, make the points 50% transparent, and choose a color palette other than the ggplot default. 
@@ -81,6 +87,7 @@ ggplot(PhysLakeData_thermo, aes(x = daynum, y = thermocline, color = lakename)) 
   geom_point(alpha = 0.5) +
   scale_color_brewer()
   
+#Upward trend of thermocline deepening. Shallow lakes have shallower and less stable thermoclines due to wind events. Deeper lakes have deeper and more stable thermoclines across years. 
 
 month <- as.factor(PhysLakeData_thermo$Month)
 
