@@ -35,7 +35,7 @@ library(LAGOSNE)
 theme_set(theme_classic())
 options(scipen = 100) # Tells R how much to abbreviate a number (scientific notation)
 
-lagosne_get(dest_folder = LAGOSNE:::lagos_path(), overwrite = TRUE) # Downloads Lagos NE database onto the computer. This is a linked database with many different datasets. 
+#lagosne_get(dest_folder = LAGOSNE:::lagos_path(), overwrite = TRUE) # Downloads Lagos NE database onto the computer. This is a linked database with many different datasets. 
 
 ```
 
@@ -207,7 +207,8 @@ ggplot(LAGOStrophic, aes(x = TSI.chl, y = TSI.tp, color = samplemonth)) +
 
 What is the observed relationship, and how does it depart from the 1:1 relationship? What do values above or below the 1:1 line tell us about the conditions present in a lake? (see NALMS description)[https://www.nalms.org/secchidipin/monitoring-methods/trophic-state-equations/]
 
-> 
+> Reduction in clarity coming from high chlorophyll produces TSI.chl higher than TSI.secchi. Reduction in clarity coming from non-biological components when TSI.secchi > TSI.chl. We are not seeing a wide spread difference in seasonality.  
+> TSI.chl > TSI.tp (below 1:1 line) when phosphorus IS the limiting nutrients for total primary productivity. We see late summer samples here. TSI.tp > TSI.chl (above the 1:1 line) when phosphorus is not the limiting nutrient. You can get high P concentrations without increases in total primary productivity. 
 
 ### Comparing TSI across states
 
@@ -221,9 +222,10 @@ ggplot(LAGOStrophic, aes(x = state, y = TSI.chl)) +
   geom_hline(yintercept = 40, lty = 2, color = "gray") +
   geom_hline(yintercept = 50, lty = 2, color = "gray") +
   geom_hline(yintercept = 70, lty = 2, color = "gray")
+#  geom_rect(aes(0, 18, 0, 40), color = "green") # to fill background of entire plot
 
 ggplot(LAGOStrophic, aes(x = state, fill = trophic.class)) +
-  geom_bar(stat = "count", position = position_dodge(preserve = "single")) +
+  geom_bar(stat = "count", position = position_dodge(preserve = "single")) + #dodge --> put bars right next to each other. "preserve = single" --> keeps bar widths the same no matter how many factors are plotted
   theme(legend.position = "top") +
   labs(x = "", y = "Number of Observations", fill = "Trophic Class") +
   scale_fill_viridis_d(option = "magma", begin = 0.2, end = 0.8, direction = -1)
