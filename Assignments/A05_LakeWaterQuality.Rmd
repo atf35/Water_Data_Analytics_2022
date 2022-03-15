@@ -98,7 +98,7 @@ LAGOStrophic %>%
 
 Which of these metrics is most conservative in its designation of eutrophic conditions? Why might this be?
 
-> TSI computed from chlorophyll is the msot conservative of the metrics, with 56% of teh samples assigned as eutrophic and 20% of the sample assigned as hypereutrophic, compared with 38% and 33% assigned as eutrophic using Secchi depth and total phosphorus, respectively. This may be because...[chlorophyll makes up the majority of reduced clarity and primary productivity is limited by phosphorus]. 
+> TSI computed from chlorophyll is the msot conservative of the metrics, with 56% of the samples assigned as eutrophic and 20% of the sample assigned as hypereutrophic, compared with 38% and 33% assigned as eutrophic using Secchi depth and total phosphorus, respectively. This may be because...[chlorophyll makes up the majority of reduced clarity and primary productivity is limited by phosphorus]. 
 
 
 ## Nutrient Concentrations
@@ -152,7 +152,7 @@ Which states have the largest and smallest concentration ranges?
 
 ```{r}
 ggplot(LAGOSNandP, aes(x = state, y = tp, color = samplemonth)) +
-  geom_jitter(alpha = 0.2, size = 0.5)
+  geom_jitter(alpha = 0.2, size = 0.5) +
   scale_y_log10() +
   labs(x = "State", y = expression("Total Phosphorus ("*mu*"g/L)"))
 
