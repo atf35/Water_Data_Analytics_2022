@@ -151,15 +151,15 @@ If we wanted to explore some of the other variables that might help predict lake
 
 ```{r}
 LAGOScovariates <- LAGOSjoined %>%
-  mutate(percentdeveloped = buffer500m_nlcd2011_pct_22 + buffer500m_nlcd2011_pct_23 + buffer500m_nlcd2011_pct_24,
-         percentforest = buffer500m_nlcd2011_pct_41 + buffer500m_nlcd2011_ha_42 + buffer500m_nlcd2011_ha_43,
-         percentrowcrops = buffer500m_nlcd2011_pct_82) %>%
+  mutate(percentdeveloped = buffer500m_nlcd2011_pct_22 + buffer500m_nlcd2011_pct_23 + buffer500m_nlcd2011_pct_24,#forested landtype
+         percentforest = buffer500m_nlcd2011_pct_41 + buffer500m_nlcd2011_ha_42 + buffer500m_nlcd2011_ha_43,#developed landtype
+         percentrowcrops = buffer500m_nlcd2011_pct_82) %>% #agricultural landtype 
   select(chla, tn, tp, doc, secchi,
          maxdepth,lake_area_ha, buffer500m_slope_mean,
          percentdeveloped, percentforest, percentrowcrops)
 
 # create a correlation matrix. Necessitates only complete cases.
-LAGOScorr <- cor(LAGOScovariates, use = "complete.obs")
+LAGOScorr <- cor(LAGOScovariates, use = "complete.obs") #restrict to complete observations in the 11 variables
 
 # plot correlation matrix.
 corrplot(LAGOScorr)
