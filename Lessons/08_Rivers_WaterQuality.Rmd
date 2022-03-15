@@ -95,10 +95,10 @@ NeuseWQ_processed <- NeuseWQ %>%
 NeuseFlow_processed <- NeuseFlow %>%
   select(ActivityStartDate = Date, Flow_cfs = X_00060_00003) %>%
   filter(ActivityStartDate >= min(NeuseWQ_processed$ActivityStartDate) & 
-           ActivityStartDate <= max(NeuseWQ_processed$ActivityStartDate))
+           ActivityStartDate <= max(NeuseWQ_processed$ActivityStartDate)) #include dates that pertain to water quality variables
 
 NeuseWQFlow_processed <- NeuseWQ_processed %>%
-  full_join(., NeuseFlow_processed) %>%
+  full_join(., NeuseFlow_processed) %>% #full join b/c keep daily flow measurements with water quality measurements. 
   mutate(Year = year(ActivityStartDate), 
          Month = month(ActivityStartDate), 
          DOY = yday(ActivityStartDate),)
@@ -160,6 +160,7 @@ ggplot(NeuseWQFlow_processed, aes(x = Flow_cfs, y = FecalColiform_cfu.100mL)) +
   labs(x = "Flow (cfs)", y = "Fecal Coliform (cfu/100 mL)")
 
 summary(lm(data = NeuseWQFlow_processed, log10(FecalColiform_cfu.100mL) ~ log10(Flow_cfs)))
+plot(lm(data = NeuseWQFlow_processed, log10(FecalColiform_cfu.100mL) ~ log10(Flow_cfs))) #check assumptions for lm
 
 ggplot(NeuseWQFlow_processed, aes(x = Flow_cfs, y = SpC_uS.cm)) +
   geom_point() +
@@ -184,5 +185,20 @@ Exercise:
 ```{r}
 
 
+
+#2a
+
+ggplot(NeuseWQFlow_processed, aes(x = HydrologicCondition, y = FecalColiform_cfu.100mL)) +
+  geom_boxplot(outlier.shape = NA) +
+  ylim(0,300) +
+  scale_x_discrete() +
+  geom_jitter(alpha = 0.5, color = "olivedrab4") +
+  labs(x = "Hydrologic Condition", y = "Fecal Coliform (cfu/100ml)")
+
+ggplot(NeuseWQFlow_processed, aes(x = HydrologicCondition, y = SpC_uS.cm)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.5, color = "violetred") +
+  labs(x = "Hydrologic Condition", y = expression("Specific Conductivity ("*mu*"S/cm)")) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 ```
 
