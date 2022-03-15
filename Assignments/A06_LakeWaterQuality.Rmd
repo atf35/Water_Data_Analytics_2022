@@ -1,6 +1,6 @@
 ---
 title: "Assignment 6: Water Quality in Lakes"
-author: "Student Name"
+author: "Atalie Fischer"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -32,6 +32,21 @@ Target due date: 2022-03-01
 
 ```{r setup}
 
+## Verify working directory
+getwd()
+#setwd("/Users/ataliefischer/Desktop/WDA/Water_Data_Analytics_2022")
+
+# Load Packages
+library(tidyverse)
+library(lubridate)
+library(dataRetrieval)
+
+# Set theme
+theme_set(theme_classic())
+options(scipen = 4)
+
+
+## Load data
 NCdata <- readWQPdata(statecode = "North Carolina", 
                       siteType = "Lake, Reservoir, Impoundment", 
                       sampleMedia = c("Water", "water"), 
@@ -75,15 +90,15 @@ ActivityConductingOrganizationText, MonitoringLocationIdentifier, Depth, ResultM
   
 ```{r}
 
-# Look into what forms and units phosphorus and chlorophyll have. 
+## Look into what forms and units phosphorus and chlorophyll have. 
 # Note that chlorophyll is always suspended, so the form isn't crucial.
-# Note that Phosphorus is in dissolved and total forms. We are interested in total.
-# Note that chlorophyll is in ug/L and phosphorus is in mg/L. In this case, we will assume NAs are consistent with the commonly used unit.
-# Note that we have 227 "U" flags in the dataset. This means the concentration was below the detection limit. We will set those values to 1/2 detection limit.
 summary(as.factor(NCdata$ResultSampleFractionText[NCdata$CharacteristicName == "Chlorophyll a"]))
+# Note that Phosphorus is in dissolved and total forms. We are interested in total.
 summary(as.factor(NCdata$ResultSampleFractionText[NCdata$CharacteristicName == "Phosphorus"]))
+# Note that chlorophyll is in ug/L and phosphorus is in mg/L. In this case, we will assume NAs are consistent with the commonly used unit.
 summary(as.factor(NCdata$ResultMeasure.MeasureUnitCode[NCdata$CharacteristicName == "Phosphorus"]))
 summary(as.factor(NCdata$ResultSampleFractionText[NCdata$CharacteristicName == "Phosphorus"]))
+# Note that we have 227 "U" flags in the dataset. This means the concentration was below the detection limit. We will set those values to 1/2 detection limit.
 summary(as.factor(NCdata$MeasureQualifierCode))
 
 # ResultMeasureValue should be numeric. Note that there are a few non-numeric entries in that column, so R will throw out a warning (you can ignore this warning).
@@ -107,9 +122,33 @@ NCdata_processed <- NCdata %>%
                                         TRUE ~ ResultMeasureValue)) %>%
   drop_na(Variable, ResultMeasureValue, Depth_m)
   
+## Set ActivityStartDate as date. (#3)
+NCdata_processed$ActivityStartDate <- as.Date(NCdata_processed$ActivityStartDate, format = "%Y-%m-%d")
+
+## Wrangle new processed dataset (#4)
+NCdata_processed_wrangled <- NCdata_processed %>% 
+  select("OrganizationIdentifier", "OrganizationFormalName", "ActivityStartDate", 
+"ActivityConductingOrganizationText", "MonitoringLocationIdentifier", "Depth_m", "ResultMeasureValue", "Variable") %>% 
+  group_by(OrganizationIdentifier, OrganizationFormalName, ActivityStartDate, 
+ActivityConductingOrganizationText, MonitoringLocationIdentifier, Depth_m, Variable) %>% 
+  summarise(ResultMeasureValue = mean(ResultMeasureValue)) %>% 
+  pivot_wider(names_from = "Variable", values_from = "ResultMeasureValue") %>% 
+  mutate(Month = month(ActivityStartDate),
+         Year = year(ActivityStartDate)) %>% 
+  filter(Month %in% c(5:10),
+         Depth_m <= 1)
+
+## Chlorophyll-TP stressor-response relationship (#5)
+ggplot(NCdata_processed_wrangled, aes(x = TP_mgL, y = Chla_ugL)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = lm, se = FALSE, color = "darkred") +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(x = expression("Total Phosphorus (mg/L)"),
+       y = expression("Chlorophyll a ("*mu*"g/L)"))
 
 ```
   
 6. How might you expect this stressor-response relationship to change (or not) across the Mountains, Piedmont, and Coastal Plain regions of the state? How might you anticipate natural lakes might behave differently than reservoirs?
 
-> 
+> I expect the Piedmont to have a weak total phosphorus-chlorophyll a response because agricultural inputs of phosphorus in this region is extremely high and there is an excess of P in Piedmont systems. I expect NC mountains to have a strong TP-Chla relationship since P is typically a limiting nutient in mountainous regions. Comparatively, the Coastal Plain is expected to have a low stressor-response relationship because agricultural runoff and sediment runoff accumulate in this region and P is typically in excess. I anticipate that reservoirs would have excess P and thus would have a weaker stressor-response relationship compared to natural lakes. 
