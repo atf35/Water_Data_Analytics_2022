@@ -42,6 +42,8 @@ Two types of trends may be present in our time series dataset: **monotonic** or 
 
 Step trend analysis works well for upstream/downstream and before/after study design. We will not delve into these methods during class, but specific tests are listed below for future reference. 
 
+> Can think about changes in policy or dam installations/removals. 
+
 Note: ALWAYS look into the assumptions of a given test to ensure it matches with your data and with your research question.
 
 * **Change point detection**: see a review of the pros and cons of various methods [here](https://lindeloev.github.io/mcp/articles/packages.html)
@@ -53,20 +55,22 @@ Note: ALWAYS look into the assumptions of a given test to ensure it matches with
 
 In general, detecting a monotonic trend requires a long sequence of data with few gaps. If we are working with monthly data, a time series of at least ten years is recommended. Gaps can be accounted for, but a gap that makes up more than 1/3 of the sampling period is generally considered the threshold for considering a gap to be too long (a step trend analysis might be better in this situation). 
 
+> 10-years is considered the minimum threshold for considering monotonic trend analysis. 
+
 Adjusting the data may be necessary to fulfill the assumptions of a trend test. These adjustments include **aggregation**, **subsampling**, and **interpolation**. What do each of these mean, and why might we want to use them?
 
-> aggregation: 
+> aggregation: account for gaps (e.g. if you have daily data, but dont' have data for a few days, you can aggregate them by month). Some time series analyses require less autocorrelation. Aggregation can reduce temporal autocorrelation (e.g. daily data will have autocorrelation with the previous day, but Jan/Feb/Mar may not be as autocorrelated).
 
-> subsampling: 
+> subsampling: subset a sample of your data to build a model with, and then run your model on the rest of your data. Can also subset at a different frequency (e.g. you have daily data, but know it is autocorrelated, so you only take the values at every 14 days). 
 
-> interpolation: 
+> interpolation: use surrounding data to fill in the gaps. 
 
 Specific tests for monotonic trend analysis are listed below, with assumptions and tips: 
 
 * **linear regression**: no seasonality, fits the assumptions of a parametric test. Function: `lm`
 * **Mann-Kendall**: no seasonality, non-parametric, no temporal autocorrelation, missing data allowed. Function: `mk.test` (package: trend)
 * **modified Mann-Kendall**: no seasonality, non-parametric, accounts for temporal autocorrelation, missing data allowed. Function: `mmky` and `mmkh` (package: modifiedmk)
-* **Seasonal Mann-Kendall**: seasonality, non-parametric, no temporal autocorelation, identical distribution. Function: `smk.test` (package: trend)
+* **Seasonal Mann-Kendall**: seasonality, non-parametric, no temporal autocorelation, identical distribution (equally spaced time steps). Function: `smk.test` (package: trend)
 
 The packages trend, Kendall, and modifiedmk also include other modifications to monotonic trend tests. Look into the documentation for these packages if you are applying a special case.
 
@@ -119,7 +123,7 @@ NeuseFlow_monthly <- NeuseFlow %>%
   mutate(Year = year(Date),
          Month = month(Date)) %>%
   group_by(Year, Month) %>%
-  summarise(Discharge_acftmo = sum(Discharge)*1.98347)
+  summarise(Discharge_acftmo = sum(Discharge)*1.98347) #convert to acre-feet/month
 
 
 ```
@@ -128,35 +132,38 @@ Let's visualize the seasonality of these two datasets. Add some editing to impro
 
 ```{r}
 Condplot <-
-ggplot(NeuseCond_monthly, aes(x = as.factor(Month), y = Conductivity)) +
-  geom_boxplot()
+ggplot(drop_na(NeuseCond_monthly), aes(x = as.factor(Month), y = Conductivity)) +
+  geom_boxplot() +
+  labs(x = "", y = expression("Conductivity "*mu*"s/cm"), title = "Neuse River")
 
 Flowplot <-
 ggplot(NeuseFlow_monthly, aes(x = as.factor(Month), y = Discharge_acftmo)) +
-  geom_boxplot()
+  geom_boxplot() +
+  labs(x = "Month", y = "Discharge (acft/mo)")
 
-plot_grid(Condplot, Flowplot, ncol = 1)
+plot_grid(Condplot, Flowplot, ncol = 1, align = "hv")
 ```
 
+> We see higher conductivity in the summer months and lower conductivity in the winter months. We see the opposite for flow, with lower discharge in the summer months and higher discharge in the winter months. 
 
 Now, let's prepare our datasets for seasonal Mann-Kendall analysis. This test requires a time series rather than a data frame.
 
 ```{r}
 
 NeuseCond_timeseries <- ts(NeuseCond_monthly$Conductivity, frequency = 12,
-                           start = c(1980, 10, 1), end = c(2021, 12, 1))
+                           start = c(1980, 10, 1), end = c(2021, 12, 1)) #interpolated up to monthly data, so the day doesnt matter (just a place holder)
 # Run SMK test
 NeuseCond_trend <- smk.test(NeuseCond_timeseries)
 
 # Inspect results
-NeuseCond_trend
+NeuseCond_trend #positive z score --> positive trend over time. S --> sum of differences over time. 
 summary(NeuseCond_trend)
 
 ```
 
 What would we conclude based on these findings? 
 
->
+> We see a positive trend in conductivity over time with a positive z score and a p-value of <0.05. Conductivity is a proxy for salinity, so we see that the Neuse River is becoming more salinated over time. The summary function for the SMK test will give us the significance of the trends for each month. We see that increased salinity occurs in the winter months. 
  
 If a significant trend was present, we could compute a **Sen's Slope** to quantify that trend (`sens.slope` function in the trend package).
 
@@ -166,12 +173,18 @@ Exercise: run the same test for discharge.
 NeuseFlow_timeseries <- ts(NeuseFlow_monthly$Discharge_acftmo, frequency = 12,
                            start = c(1976, 1, 1), end = c(2021, 12, 1))
 
+NeuseFlow_trend <- smk.test(NeuseFlow_timeseries)
+
+NeuseFlow_trend
+summary(NeuseFlow_trend)
 
 ```
 
 What would we conclude based on these findings? 
 
->
+> With a positive z score and a p-value < 0.05, we see that there is a monotonic increase in discharge over time. Our summary shows that the increase in discharge is occuring in the fall months, which is the typical hurricane season in North Carolina. 
+
+> Since we do not see an increase in discharge in the winter months, but we see an increase in conductivity, we can conclude that there is a significant input of material into the Neuse River during the winter months that increases the salintiy (for example, road salts or construction material). 
  
 ## Autoregressive and Moving Average Models (ARMA)
 
@@ -187,16 +200,15 @@ ARMA models require stationary data. This means that there is no monotonic trend
 
 ```{r}
 
-adf.test(NeuseFlow_timeseries, alternative = "stationary")
-
+adf.test(NeuseFlow_timeseries, alternative = "stationary") #test requires stationary data, however, this may not be the case. Null hypothesis is that the data are NOT stationary, so the p-value < 0.05 indicates that the data ARE stationary. 
 ```
 
 Let's inspect the ACF and PACF plots. Notice the ACF plot has repeating positive and negative components (indicating seasonality), whereas the PACF decays over time without a clear seasonal structure.
 
 ```{r}
 
-acf(NeuseFlow_timeseries)
-pacf(NeuseFlow_timeseries)
+acf(NeuseFlow_timeseries) #autocorrelation. first month will always be autocorrelated. Autocorrelation decays over time and we can see seasonality in our data. 
+pacf(NeuseFlow_timeseries) #moving average. first month will always be partially autocorrelated. decays over time. see seasonality. 
 
 ```
 
@@ -211,15 +223,15 @@ auto.arima(NeuseFlow_timeseries, trace = TRUE)
 fit <- arima(NeuseFlow_timeseries, c(1,0,0),seasonal = list(order = c(0,0,2), period = 12))
 
 # make a prediction into the future
-Neuseprediction <- predict(fit, n.ahead = 10*12)
+Neuseprediction <- predict(fit, n.ahead = 10*12) #n.head --> run 10 years of 12 months each
 
 # plot future predictions
-ts.plot(NeuseFlow_timeseries, Neuseprediction$pred, lty = c(1, 3))
+ts.plot(NeuseFlow_timeseries, Neuseprediction$pred, lty = c(1, 3)) #data in solid, prediction in dotted lines. 
 
 ```
 
 How do future predictions compare to the past? Why might the forecast be lacking in complexity?
 
-> 
+> There is a lot of variation in actual precipitation over time. Our prediction does not show this variation. This autocorrelation test is maybe not the best option for this dataset. 
 
 
